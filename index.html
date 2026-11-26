@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>個人財務紀錄</title>
+<style>
+:root{
+  --navy:#1F3864; --green:#375623; --red:#C00000; --accent:#4f81bd;
+  --bg:#f5f7fa; --card:#ffffff; --text:#1a1a1a; --sub:#6b7280; --border:#e2e6ea;
+  --pie1:#4f81bd;--pie2:#c0504d;--pie3:#9bbb59;--pie4:#8064a2;--pie5:#4bacc6;--pie6:#dc853e;--pie7:#93a9ce;--pie8:#b5cd8e;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#12161c; --card:#1c222b; --text:#e8ebef; --sub:#9aa4b2; --border:#2c333d; }
+}
+:root[data-theme="dark"]{ --bg:#12161c; --card:#1c222b; --text:#e8ebef; --sub:#9aa4b2; --border:#2c333d; }
+*{box-sizing:border-box;}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;}
+header{position:sticky;top:0;padding:14px 16px calc(10px + env(safe-area-inset-top,0px));background:var(--navy);color:#fff;z-index:5;}
+header h1{margin:0;font-size:18px;}
+nav{display:flex;gap:0;padding:8px 6px;background:var(--card);border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:52px;z-index:4;}
+nav button{flex:1 0 auto;padding:8px 6px;border:none;border-radius:20px;background:transparent;color:var(--sub);font-size:12.5px;white-space:nowrap;font-weight:600;cursor:pointer;}
+nav button.active{background:var(--navy);color:#fff;}
+main{padding:14px;max-width:760px;margin:0 auto;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;}
+.card h2{margin:0 0 10px;font-size:15px;color:var(--navy);}
+:root[data-theme="dark"] .card h2{color:#8fb3ea;}
+label{font-size:12px;color:var(--sub);display:block;margin:8px 0 3px;}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:end;}
+.row3>div{min-width:0;}
+.row3 select,.row3 input,.row2 select,.row2 input{height:40px;}
+.row3 label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+button.primary{margin-top:12px;width:100%;padding:11px;border:none;border-radius:8px;background:var(--navy);color:#fff;font-size:14px;font-weight:600;cursor:pointer;}
+button.primary.alt{background:var(--card);color:var(--primary,#1e3a63);border:1.5px solid currentColor;}
+button.ghost{padding:6px 10px;border:1px solid var(--border);background:none;color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th,td{padding:6px 5px;border-bottom:1px solid var(--border);text-align:center;white-space:nowrap;}
+th{color:var(--sub);font-weight:600;}
+.twrap{overflow-x:auto;}
+.income{color:var(--green);font-weight:600;} .expense{color:var(--red);font-weight:600;}
+.kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;}
+.kpi .l{font-size:11px;color:var(--sub);} .kpi .v{font-size:17px;font-weight:700;margin-top:3px;}
+.chartbox{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:center;}
+.legend{font-size:12px;} .legend div{display:flex;align-items:center;gap:6px;margin:3px 0;}
+.dot{width:10px;height:10px;border-radius:3px;flex:none;}
+.settlist{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.chip{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:5px 10px;font-size:12px;display:flex;align-items:center;gap:6px;}
+.chip button{border:none;background:none;color:var(--red);cursor:pointer;font-weight:700;}
+.addrow{display:flex;gap:6px;margin-top:8px;}
+.addrow input{flex:1;}
+.hint{font-size:11.5px;color:var(--sub);margin-top:4px;}
+select#themeSel{width:auto;display:inline-block;padding:4px 8px;font-size:12px;}
+tr.txrow{cursor:pointer;}
+tr.txrow:active{background:var(--bg);}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20;}
+.sheet{background:var(--card);border-radius:16px 16px 0 0;padding:18px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));}
+.sheet h3{margin:0 0 12px;color:var(--navy);font-size:16px;}
+:root[data-theme="dark"] .sheet h3{color:#8fb3ea;}
+.dl{display:grid;grid-template-columns:90px 1fr;gap:8px 10px;font-size:13.5px;margin-bottom:4px;}
+.dl .k{color:var(--sub);}
+.sheet .closebtn{margin-top:14px;width:100%;padding:10px;border:none;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:14px;cursor:pointer;}
+[hidden]{display:none!important}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.sync{font-size:11.5px;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.sync::before{content:"";width:8px;height:8px;border-radius:50%;background:#9aa4b2;flex:none;}
+.sync{cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.sync[data-login="1"]{background:#fff;color:var(--navy);padding:7px 16px;border-radius:18px;font-size:13.5px;font-weight:700;}
+.sync[data-login="1"]::before{display:none;}
+.sync[data-state="ok"]::before{background:#7bd88f;}
+.sync[data-state="busy"]::before{background:#f2c94c;}
+.sync[data-state="err"]::before{background:#ff8a80;}
+#acctMenu{position:fixed;right:12px;top:calc(52px + env(safe-area-inset-top,0px));min-width:210px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.25);padding:6px;z-index:35;}
+#acctMenu .em{padding:8px 12px;font-size:12px;color:var(--sub);word-break:break-all;}
+#acctMenu button{display:block;width:100%;text-align:left;padding:11px 12px;border:none;background:none;color:var(--text);font-size:14px;border-radius:8px;cursor:pointer;}
+#acctMenu button.out{color:#d33;}
+#acctMenu button:active{background:var(--bg);}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));max-width:calc(100% - 32px);padding:10px 16px;border-radius:10px;background:var(--text);color:var(--bg);font-size:13px;z-index:40;}
+#confirmOverlay{z-index:30;}
+.confirmbtns{display:flex;gap:8px;margin-top:14px;}
+.confirmbtns button{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;cursor:pointer;}
+.confirmbtns button.danger{background:var(--red);border-color:var(--red);color:#fff;}
+#syncDetail{margin-top:8px;font-size:13px;}
+.txcard{padding:10px 2px;border-bottom:1px solid var(--border);cursor:pointer;display:grid;gap:4px;}
+.txcard:last-child{border-bottom:none;}
+.txcard:active{background:var(--bg);}
+.tx-l1,.tx-l2{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;}
+.tx-date{font-size:12px;color:var(--sub);flex:none;font-variant-numeric:tabular-nums;}
+.tx-desc{font-size:14px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tx-meta{font-size:12.5px;color:var(--sub);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tx-amt{font-size:15px;font-weight:700;flex:none;font-variant-numeric:tabular-nums;}
+.tx-amt.income{color:var(--green);} .tx-amt.expense{color:var(--red);} .tx-amt.transfer{color:var(--accent);}
+.txempty{padding:18px 0;text-align:center;color:var(--sub);font-size:13px;}
+.dwrap{position:relative;}
+.dwrap .dtxt{padding-right:42px;font-variant-numeric:tabular-nums;}
+.dwrap .dnative{position:absolute;top:0;right:0;width:42px;height:100%;opacity:0;padding:0;border:0;margin:0;cursor:pointer;}
+.dwrap .dicon{position:absolute;top:0;right:0;width:42px;height:100%;display:flex;align-items:center;justify-content:center;color:var(--sub);pointer-events:none;}
+</style>
+</head>
+<body>
+<header>
+  <h1>💰 個人財務紀錄</h1>
+  <div class="sync" id="syncStatus" data-state="busy" title="Google 同步狀態">連線中…</div>
+</header>
+<nav>
+  <button data-tab="record" class="active">收支記錄</button>
+  <button data-tab="monthly">月度總覽</button>
+  <button data-tab="annual">年度總覽</button>
+  <button data-tab="settings">分類設定</button>
+  <button data-tab="backup">匯入/匯出</button>
+</nav>
+<main>
+
+<section id="tab-record">
+  <div class="card">
+    <h2>新增一筆</h2>
+    <label>日期</label><input type="date" id="f_date">
+    <div class="row3">
+      <div><label id="lbl_account">帳戶</label><select id="f_account"></select></div>
+      <div><label>類型</label><select id="f_type"><option value="expense">支出</option><option value="income">收入</option><option value="transfer">轉帳</option></select></div>
+      <div><label id="lbl_category">類別</label><select id="f_category"></select></div>
+    </div>
+    <label>項目說明</label><input type="text" id="f_desc" placeholder="例如：午餐">
+    <div class="row3">
+      <div><label>幣別</label><select id="f_currency"></select></div>
+      <div><label>匯率</label><input type="number" id="f_rate" value="1" step="0.0001"></div>
+      <div><label>金額（原幣）</label><input type="number" id="f_amount" placeholder="0"></div>
+    </div>
+    <label id="instLabel" style="display:flex;align-items:center;gap:6px;margin-top:10px;"><input type="checkbox" id="f_installment" autocomplete="off" style="width:auto;" onchange="document.getElementById('installmentBox').style.display=this.checked?'':'none'">分期付款（信用卡刷卡分期）</label>
+    <div id="installmentBox" style="display:none">
+      <label>期數</label><input type="number" id="f_periods" placeholder="例如：12" min="2">
+      <div class="hint">上方「金額」請填分期的總金額，系統會自動依總金額 ÷ 期數，產生對應筆數的交易，日期依每月遞增，套用該帳戶的信用卡結帳日邏輯分別入帳。</div>
+    </div>
+    <label>備註</label><input type="text" id="f_note">
+    <button class="primary" onclick="addTx()">新增</button>
+  </div>
+  <div class="card">
+    <h2>交易清單</h2>
+    <div class="row2">
+      <div><label>起始日期</label><input type="date" id="tx_from"></div>
+      <div><label>結束日期</label><input type="date" id="tx_to"></div>
+    </div>
+    <button class="ghost" style="margin-top:6px;" onclick="setDateField('tx_from','');setDateField('tx_to','');renderTable();">清除區間</button>
+    <div id="txList" style="margin-top:8px;"></div>
+  </div>
+</section>
+
+<section id="tab-monthly" style="display:none">
+  <div class="card">
+    <div class="row2">
+      <div><label>年份</label><input type="number" id="m_year"></div>
+      <div><label>月份</label><select id="m_month"></select></div>
+    </div>
+  </div>
+  <div class="kpis" style="grid-template-columns:1fr 1fr;">
+    <div class="kpi"><div class="l">上月結轉</div><div class="v" id="m_carry"></div></div>
+    <div class="kpi"><div class="l">本月收入（含結轉）</div><div class="v income" id="m_in"></div></div>
+    <div class="kpi"><div class="l">本月支出</div><div class="v expense" id="m_out"></div></div>
+    <div class="kpi"><div class="l">本月結餘</div><div class="v" id="m_bal"></div></div>
+  </div>
+  <div class="hint" style="margin:-6px 0 12px;">本月結餘會自動轉入下個月的「上月結轉」，計入下個月收入。</div>
+  <div class="card"><h2>收入類別佔比</h2><div class="chartbox" id="m_inccat_chart"></div></div>
+  <div class="card"><h2>支出類別佔比</h2><div class="chartbox" id="m_cat_chart"></div></div>
+  <div class="card"><h2>帳戶支出佔比</h2><div class="chartbox" id="m_acc_chart"></div></div>
+</section>
+
+<section id="tab-annual" style="display:none">
+  <div class="card"><label>年份</label><input type="number" id="y_year"></div>
+  <div class="kpis" style="grid-template-columns:1fr 1fr;">
+    <div class="kpi"><div class="l">資產總結餘</div><div class="v income" id="y_asset"></div></div>
+    <div class="kpi"><div class="l">負債總結餘</div><div class="v expense" id="y_liability"></div></div>
+  </div>
+  <div class="hint" style="margin:-6px 0 12px;">資產＝非信用卡帳戶（現金、銀行、電子支付等）目前餘額加總；負債＝信用卡帳戶目前累積應繳金額加總，皆為所有歷史交易的即時總計，不受上方年份篩選影響。</div>
+  <div class="card"><h2>每月收支趨勢</h2><div id="y_trend"></div></div>
+  <div class="card"><h2>收入類別佔比（全年）</h2><div class="chartbox" id="y_inccat_chart"></div></div>
+  <div class="card"><h2>支出類別佔比（全年）</h2><div class="chartbox" id="y_cat_chart"></div></div>
+  <div class="card"><h2>帳戶支出佔比（全年）</h2><div class="chartbox" id="y_acc_chart"></div></div>
+</section>
+
+<section id="tab-settings" style="display:none">
+  <div class="card">
+    <h2>帳戶（信用卡請勾選並設定結帳日）</h2>
+    <div id="acc_list" class="settlist"></div>
+    <div class="addrow" style="flex-wrap:wrap;">
+      <input id="new_acc" placeholder="帳戶名稱" style="flex:2;min-width:100px;">
+      <input id="new_acc_balance" type="number" placeholder="期初餘額" style="flex:1;min-width:90px;">
+    </div>
+    <div class="addrow" style="margin-top:6px;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:4px;margin:0;white-space:nowrap;"><input type="checkbox" id="new_acc_card" style="width:auto;">信用卡</label>
+      <input id="new_acc_day" type="number" placeholder="結帳日" style="width:70px;">
+      <button class="ghost" onclick="addAccount()">新增帳戶</button>
+    </div>
+    <div class="hint">期初餘額：新增帳戶當下已有的金額（例如現有存款），之後會加上這個帳戶所有收支自動計算「目前餘額」。信用卡消費：結帳日當天或之前算「上個月」帳單；結帳日之後算「當月」帳單。</div>
+  </div>
+  <div class="card"><h2>收入類別</h2><div id="inc_list" class="settlist"></div>
+    <div class="addrow"><input id="new_inc" placeholder="新增收入類別"><button class="ghost" onclick="addCat('income')">新增</button></div></div>
+  <div class="card"><h2>支出類別</h2><div id="exp_list" class="settlist"></div>
+    <div class="addrow"><input id="new_exp" placeholder="新增支出類別"><button class="ghost" onclick="addCat('expense')">新增</button></div></div>
+  <div class="card"><h2>幣別</h2><div id="cur_list" class="settlist"></div>
+    <div class="addrow"><input id="new_cur" placeholder="新增幣別"><button class="ghost" onclick="addCurrency()">新增</button></div></div>
+  <div class="card"><h2>外觀</h2>
+    <select id="themeSel"><option value="auto">跟隨系統</option><option value="light">淺色</option><option value="dark">深色</option></select>
+  </div>
+  <div class="card">
+    <h2>Google 帳號同步</h2>
+    <div id="syncDetail">連線中…</div>
+    <div id="gEmail" class="hint" style="margin-top:6px;"></div>
+    <button class="primary" id="gLogin" onclick="googleLogin()">使用 Google 登入</button>
+    <button class="primary alt" id="gSyncBtn" style="display:none;margin-top:10px;" onclick="syncNow()">立即同步</button>
+    <button class="primary alt" id="gLogout" style="display:none;margin-top:10px;" onclick="googleLogout()">登出</button>
+    <div class="hint" style="margin-top:10px;">登入後資料會存到你自己的 Firebase 雲端資料庫（只有你的 Google 帳號讀得到），並在新增、修改後自動同步；多台裝置用同一個 Google 帳號登入即可共用資料。</div>
+    <details id="gDetails" style="margin-top:12px;"><summary style="cursor:pointer;font-size:13px;">Firebase 設定</summary>
+      <textarea id="fbcfg" rows="7" placeholder="貼上 Firebase 提供的 firebaseConfig（apiKey、authDomain、projectId、appId…）" style="margin-top:8px;width:100%;font-size:12px;" onchange="saveFbConfig(this.value)"></textarea>
+      <div class="hint" style="margin-top:6px;">只需設定一次。設定存在這支手機的瀏覽器裡；其他裝置也要貼一次。</div>
+    </details>
+  </div>
+  <div class="hint" id="verInfo" style="text-align:center;margin:18px 0 8px;"></div>
+</section>
+
+<section id="tab-backup" style="display:none">
+  <div class="card">
+    <h2>目前的資料</h2>
+    <div id="dataSummary" style="font-size:14px;line-height:1.7;"></div>
+  </div>
+  <div class="card">
+    <h2>匯出</h2>
+    <div class="hint" style="margin:0 0 10px;">備份檔（JSON）包含全部帳戶、分類、幣別與交易，之後可以用「匯入」完整還原，換手機或換電腦時使用。交易明細（CSV）只有交易紀錄，可用 Excel 開啟，無法匯入回 App。</div>
+    <div style="display:grid;gap:8px;">
+      <button class="primary" style="margin-top:0;" onclick="exportBackup()">匯出備份檔（JSON）</button>
+      <button class="primary alt" style="margin-top:10px;" onclick="exportCsv()">匯出交易明細（CSV）</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>匯入</h2>
+    <div class="hint" style="margin:0 0 10px;">選擇之前匯出的備份檔（JSON）。匯入會完整覆蓋目前的所有資料（已啟用雲端同步時，連雲端上的資料一起覆蓋），請先確認檔案內容。</div>
+    <button class="primary alt" style="margin-top:0;" onclick="document.getElementById('importFile').click()">選擇備份檔匯入</button>
+    <input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importBackup(event)">
+  </div>
+</section>
+</main>
+<div id="detailOverlay" class="overlay" style="display:none" onclick="if(event.target===this)closeDetail()">
+  <div class="sheet">
+    <h3>交易詳細記錄</h3>
+    <div id="detailBody"></div>
+    <button class="closebtn" onclick="closeDetail()">關閉</button>
+  </div>
+</div>
+<div id="confirmOverlay" class="overlay" style="display:none" onclick="if(event.target===this)closeConfirm()">
+  <div class="sheet">
+    <h3 id="confirmTitle">請確認</h3>
+    <div id="confirmMsg" style="font-size:14px;line-height:1.6;"></div>
+    <div class="confirmbtns">
+      <button onclick="closeConfirm()">取消</button>
+      <button class="danger" id="confirmYes">確定</button>
+    </div>
+  </div>
+</div>
+<div id="acctMenu" hidden>
+  <div class="em" id="acctEmail"></div>
+  <button onclick="closeAcct();syncNow();toast('同步中…')">立即同步</button>
+  <button class="out" onclick="closeAcct();googleLogout()">登出 Google</button>
+</div>
+<div id="toast" hidden></div>
+
+<script>
+const KEY='ft_data_v1';
+const PIE=['pie1','pie2','pie3','pie4','pie5','pie6','pie7','pie8'];
+function defaultData(){
+  const today=new Date(); const y=2026;
+  return {
+    accounts:[{name:'現金',card:false,day:null,balance:0},{name:'銀行帳戶',card:false,day:null,balance:10000},
+      {name:'信用卡A',card:true,day:15,balance:0},{name:'信用卡B',card:true,day:5,balance:0},{name:'電子支付',card:false,day:null,balance:0}],
+    incomeCats:['薪資','獎金','投資收益','副業收入','其他收入'],
+    expenseCats:['餐飲','交通','住房','水電瓦斯','通訊','娛樂','購物','醫療保健','保險','教育學習','其他支出'],
+    currencies:['TWD','USD','JPY','CNY','EUR','其他'],
+    theme:'auto',
+    tx:[
+      {id:1,date:`${y}-01-05`,account:'銀行帳戶',category:'薪資',desc:'一月份薪水',currency:'TWD',rate:1,type:'income',amount:45000,note:'範例，可刪除'},
+      {id:2,date:`${y}-01-08`,account:'現金',category:'餐飲',desc:'午餐',currency:'TWD',rate:1,type:'expense',amount:150,note:'範例，可刪除'},
+      {id:3,date:`${y}-01-20`,account:'信用卡A',category:'交通',desc:'捷運儲值',currency:'TWD',rate:1,type:'expense',amount:100,note:'範例，可刪除'},
+    ]
+  };
+}
+let data=null;
+try{ data=JSON.parse(localStorage.getItem(KEY)); }catch(e){}
+if(!data) data=defaultData();
+
+// ---- 日期：顯示為 西元年/月/日，內部以 YYYY-MM-DD 儲存（本機時區）----
+function localISO(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function validISO(str){
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(str); if(!m) return false;
+  const y=+m[1], mo=+m[2], da=+m[3], d=new Date(y,mo-1,da);
+  return y>=1900 && d.getFullYear()===y && d.getMonth()===mo-1 && d.getDate()===da;
+}
+function setDateField(id,iso){
+  const nat=document.getElementById(id), txt=document.getElementById(id+'_txt');
+  nat.value=iso||''; if(txt) txt.value=iso?iso.replace(/-/g,'/'):'';
+}
+function initDateField(id){
+  const nat=document.getElementById(id); let syncing=false;
+  const wrap=document.createElement('div'); wrap.className='dwrap';
+  const txt=document.createElement('input');
+  txt.type='text'; txt.id=id+'_txt'; txt.className='dtxt'; txt.inputMode='numeric'; txt.maxLength=10;
+  txt.placeholder='西元年/月/日'; txt.autocomplete='off';
+  const icon=document.createElement('span'); icon.className='dicon';
+  icon.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+  nat.parentNode.insertBefore(wrap,nat); wrap.appendChild(txt); wrap.appendChild(icon); wrap.appendChild(nat);
+  nat.classList.add('dnative'); nat.tabIndex=-1; nat.setAttribute('aria-label','用月曆選日期');
+  txt.addEventListener('input',()=>{
+    const digits=txt.value.replace(/\D/g,'').slice(0,8);
+    let out=digits.slice(0,4); if(digits.length>4) out+='/'+digits.slice(4,6); if(digits.length>6) out+='/'+digits.slice(6,8);
+    txt.value=out;
+    const iso=digits.length===8?digits.slice(0,4)+'-'+digits.slice(4,6)+'-'+digits.slice(6,8):'';
+    const next=validISO(iso)?iso:'';
+    if(nat.value!==next){ nat.value=next; syncing=true; nat.dispatchEvent(new Event('change')); syncing=false; }
+  });
+  txt.addEventListener('blur',()=>{ if(txt.value && !nat.value) txt.setCustomValidity('請輸入正確日期'); });
+  nat.addEventListener('change',()=>{ if(syncing) return; txt.value=nat.value? nat.value.replace(/-/g,'/') : ''; });
+}
+['f_date','tx_from','tx_to'].forEach(initDateField);
+
+// ---- 提示訊息與確認視窗（檢視環境不會顯示 alert / confirm）----
+let toastTimer=null;
+function toast(msg){
+  const el=document.getElementById('toast'); el.textContent=msg; el.hidden=false;
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.hidden=true; },3000);
+}
+let confirmAction=null;
+function askConfirm(msg,onYes,title){
+  document.getElementById('confirmTitle').textContent=title||'請確認';
+  document.getElementById('confirmMsg').textContent=msg;
+  confirmAction=onYes;
+  document.getElementById('confirmOverlay').style.display='flex';
+}
+function closeConfirm(){ confirmAction=null; document.getElementById('confirmOverlay').style.display='none'; }
+document.getElementById('confirmYes').addEventListener('click',()=>{ const fn=confirmAction; closeConfirm(); if(fn) fn(); });
+
+// ---- Google 登入 + Firebase（Firestore）同步 ----
+// 使用者自己的 Firebase 專案（免費 Spark 方案，不需信用卡）。資料路徑：users/<uid>/data/{meta, tx-YYYY-MM}
+const FIREBASE_CONFIG={apiKey:"AIzaSyCYiE2g7KJfh1HOZXiQ_mCD8JBnVZK3Hm8",authDomain:"financial-records-5d677.firebaseapp.com",projectId:"financial-records-5d677",storageBucket:"financial-records-5d677.firebasestorage.app",messagingSenderId:"835066023082",appId:"1:835066023082:web:025e93b981367f4b3654d3"}; // 可直接填入設定物件，或到「分類設定 → Google 帳號同步」貼上
+const FB_VER='10.12.2';
+const APP_VERSION='1.2.0', APP_DATE='2026-11-26';
+let fbUser=null, fbDb=null, gBusy=false, gAgain=false, flushTimer=null, localVersion=0, gOn=false, fbListening=false;
+const lastWritten={};
+function lsGet(k){ try{return localStorage.getItem(k);}catch(e){return null;} }
+function lsSet(k,v){ try{ if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v);}catch(e){} }
+function fbConfig(){ if(FIREBASE_CONFIG) return FIREBASE_CONFIG; try{ const c=JSON.parse(lsGet('ft_fbcfg')); return c&&c.apiKey&&c.projectId?c:null; }catch(e){ return null; } }
+function parseFbConfig(text){
+  const o={}; String(text||'').replace(/["']?(\w+)["']?\s*:\s*["']([^"']+)["']/g,(m,k,v)=>{ o[k]=v; return m; });
+  return o;
+}
+function setSync(state,label,detail){
+  const el=document.getElementById('syncStatus'); el.dataset.state=state; el.textContent=label;
+  document.getElementById('syncDetail').textContent=detail||label;
+  const signed=!!fbUser;
+  if(!signed){ el.dataset.login=state==='busy'?'':'1'; if(state!=='busy') el.textContent='登入'; } else el.dataset.login='';
+  document.getElementById('gLogin').style.display=signed?'none':'block';
+  document.getElementById('gSyncBtn').style.display=signed?'block':'none';
+  document.getElementById('gLogout').style.display=signed?'block':'none';
+  document.getElementById('gEmail').textContent=signed?'登入帳號：'+(fbUser.email||''):'';
+}
+function headerTap(){
+  if(fbUser){ const m=document.getElementById('acctMenu'); if(!m.hidden){ closeAcct(); return; } document.getElementById('acctEmail').textContent=fbUser.email||''; m.hidden=false; return; }
+  if(!fbConfig()){ document.querySelector('nav button[data-tab=settings]').click(); toast('請先設定 Firebase'); return; }
+  googleLogin();
+}
+function closeAcct(){ document.getElementById('acctMenu').hidden=true; }
+document.getElementById('syncStatus').addEventListener('click',e=>{ e.stopPropagation(); headerTap(); });
+document.addEventListener('click',e=>{ if(!e.target.closest('#acctMenu')) closeAcct(); });
+function saveLocal(){ try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){} }
+function save(){ data.updatedAt=Date.now(); saveLocal(); localVersion++; if(fbUser) scheduleFlush(); }
+function scheduleFlush(){ clearTimeout(flushTimer); flushTimer=setTimeout(syncNow,800); }
+function loadScript(src){ return new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src=src; sc.onload=res; sc.onerror=()=>rej(new Error('無法載入 '+src.split('/').pop()+'，請確認網路')); document.head.appendChild(sc); }); }
+async function loadFirebase(){
+  if(fbDb) return;
+  if(!(window.firebase&&firebase.initializeApp)){
+    for(const n of ['app','auth','firestore']) await loadScript('https://www.gstatic.com/firebasejs/'+FB_VER+'/firebase-'+n+'-compat.js');
+  }
+  const cfg=fbConfig(); if(!cfg) throw new Error('尚未設定 Firebase');
+  if(!firebase.apps.length) firebase.initializeApp(cfg);
+  fbDb=firebase.firestore();
+}
+function col(){ return fbDb.collection('users').doc(fbUser.uid).collection('data'); }
+function monthKey(date){ return /^\d{4}-\d{2}/.test(String(date))?'tx-'+String(date).slice(0,7):'tx-undated'; }
+function splitData(d){
+  const docs={meta:{updatedAt:d.updatedAt||0,accounts:d.accounts,incomeCats:d.incomeCats,expenseCats:d.expenseCats,currencies:d.currencies}};
+  d.tx.forEach(t=>{ const k=monthKey(t.date); (docs[k]=docs[k]||{tx:[]}).tx.push(t); });
+  return docs;
+}
+function joinDocs(map){
+  const m=map.meta; if(!m) return null;
+  const tx=[]; Object.keys(map).forEach(id=>{ if(id.indexOf('tx-')===0 && Array.isArray(map[id].tx)) map[id].tx.forEach(t=>tx.push(t)); });
+  return {updatedAt:m.updatedAt||0,accounts:m.accounts||[],incomeCats:m.incomeCats||[],expenseCats:m.expenseCats||[],currencies:m.currencies||['TWD'],tx};
+}
+async function readAll(){
+  const snap=await col().get(); const map={};
+  snap.forEach(d=>{ map[d.id]=d.data(); lastWritten[d.id]=JSON.stringify(d.data()); });
+  Object.keys(lastWritten).forEach(id=>{ if(!map[id]) delete lastWritten[id]; });
+  return map;
+}
+async function pushLocal(){
+  if(!data.updatedAt){ data.updatedAt=Date.now(); saveLocal(); }
+  const at=data.updatedAt, docs=splitData(data);
+  for(const id of Object.keys(docs)){
+    if(id==='meta') continue;
+    const str=JSON.stringify(docs[id]); if(lastWritten[id]===str) continue;
+    await col().doc(id).set(docs[id]); lastWritten[id]=str;
+  }
+  for(const id of Object.keys(lastWritten)){
+    if(id!=='meta'&&!docs[id]){ await col().doc(id).delete(); delete lastWritten[id]; }
+  }
+  await col().doc('meta').set(docs.meta); lastWritten.meta=JSON.stringify(docs.meta);
+  lsSet('ft_synced',String(at));
+}
+function applyRemote(remote){
+  const keep=data.theme||'auto';
+  data={accounts:remote.accounts,incomeCats:remote.incomeCats,expenseCats:remote.expenseCats,currencies:remote.currencies,tx:remote.tx,theme:keep,updatedAt:remote.updatedAt||0};
+  saveLocal(); lsSet('ft_synced',String(data.updatedAt));
+  applyTheme(); refreshSelectsKeep(); renderAll();
+}
+function uniqBy(a,b,key){ const m=new Map(); (a||[]).concat(b||[]).forEach(x=>{ const k=key(x); if(!m.has(k)) m.set(k,x); }); return Array.from(m.values()); }
+function mergeRemote(remote){
+  // 兩邊都有修改：交易依 id 取聯集（同 id 以本機為準）；帳戶與類別取聯集
+  const newer=(remote.updatedAt||0)>(data.updatedAt||0);
+  const nm=x=>typeof x==='string'?x:(x&&x.name);
+  data.tx=uniqBy(data.tx,remote.tx,t=>t.id);
+  data.accounts=uniqBy(newer?remote.accounts:data.accounts,newer?data.accounts:remote.accounts,nm);
+  data.incomeCats=uniqBy(data.incomeCats,remote.incomeCats,x=>x);
+  data.expenseCats=uniqBy(data.expenseCats,remote.expenseCats,x=>x);
+  data.currencies=uniqBy(data.currencies,remote.currencies,x=>x);
+  data.updatedAt=Date.now(); saveLocal();
+  refreshSelectsKeep(); renderAll();
+}
+function errText(e){
+  const c=(e&&e.code)||''; const m=String(e&&e.message||e);
+  if(/permission-denied/.test(c)) return '沒有權限：請到 Firebase 的 Firestore 規則貼上說明中的規則';
+  if(/unavailable|network/.test(c)||/network|offline/i.test(m)) return '目前沒有網路';
+  return c||m;
+}
+async function syncNow(){
+  if(!fbUser) return;
+  if(gBusy){ gAgain=true; return; }
+  gBusy=true; setSync('busy','同步中…','正在與雲端同步…');
+  let ok=true, msg='';
+  try{
+    const map=await readAll(), remote=joinDocs(map);
+    const last=+lsGet('ft_synced')||0, localAt=data.updatedAt||0;
+    if(!remote){ await pushLocal(); }
+    else{
+      const remoteAt=remote.updatedAt||0;
+      if(remoteAt===localAt){ lsSet('ft_synced',String(remoteAt)); }
+      else if(remoteAt>last && localAt<=last){ applyRemote(remote); }
+      else if(localAt>last && remoteAt<=last){ await pushLocal(); }
+      else { mergeRemote(remote); await pushLocal(); toast('已合併這支手機與雲端的資料'); }
+    }
+  }catch(e){ ok=false; msg=errText(e); }
+  gBusy=false;
+  if(ok) setSync('ok','已同步','已同步。用同一個 Google 帳號登入的手機與電腦會看到相同資料。');
+  else setSync('err','同步失敗','這次同步失敗（'+msg+'），資料仍存在這個瀏覽器。稍後修改資料或按「立即同步」會重試。');
+  if(gAgain){ gAgain=false; scheduleFlush(); }
+}
+async function googleLogin(){
+  if(!fbConfig()){ toast('請先在下方貼上 Firebase 設定'); document.getElementById('gDetails').open=true; return; }
+  if(location.protocol==='file:'){ toast('Google 登入需要用網址（https）開啟本頁，不能直接開檔案'); return; }
+  try{
+    setSync('busy','登入中…','請在跳出的 Google 視窗完成登入…');
+    await loadFirebase(); listenAuth();
+    const prov=new firebase.auth.GoogleAuthProvider();
+    try{ await firebase.auth().signInWithPopup(prov); }
+    catch(e){
+      if(/popup-blocked|operation-not-supported|web-storage-unsupported/.test(e&&e.code||'')) await firebase.auth().signInWithRedirect(prov);
+      else throw e;
+    }
+  }catch(e){
+    const c=(e&&e.code)||'';
+    const hint=/unauthorized-domain/.test(c)?'這個網址還沒加入 Firebase 的「已授權網域」':(/popup-closed|cancelled/.test(c)?'已取消':(e&&e.message||c));
+    setSync('local','未登入','登入沒有完成（'+hint+'）。資料目前只存在這個瀏覽器。');
+  }
+}
+function listenAuth(){
+  if(fbListening) return; fbListening=true;
+  firebase.auth().onAuthStateChanged(u=>{
+    fbUser=u||null;
+    if(u){ lsSet('ft_gsigned','1'); syncNow(); }
+    else{ lsSet('ft_gsigned',null); gOn=false; setSync('local','未登入','尚未登入 Google。資料只存在這個瀏覽器，登入後會自動同步。'); }
+  });
+}
+function googleLogout(){
+  askConfirm('登出後，這個瀏覽器會停止同步，但手機上現有的資料與雲端上的資料都會保留。確定要登出嗎？',async()=>{
+    try{ await firebase.auth().signOut(); }catch(e){}
+    lsSet('ft_synced',null);
+  },'登出 Google');
+}
+function saveFbConfig(text){
+  if(!text.trim()){ lsSet('ft_fbcfg',null); toast('已清除設定'); return; }
+  const c=parseFbConfig(text);
+  if(!c.apiKey||!c.projectId||!c.authDomain||!c.appId){ toast('設定不完整，請複製 Firebase 提供的整段 firebaseConfig'); return; }
+  lsSet('ft_fbcfg',JSON.stringify(c)); toast('已儲存 Firebase 設定，請重新整理頁面後登入');
+}
+async function initCloud(){
+  document.getElementById('verInfo').textContent='個人財務紀錄 版本 v'+APP_VERSION+'（'+APP_DATE+'）';
+  const cfg=fbConfig();
+  if(cfg) document.getElementById('fbcfg').value=JSON.stringify(cfg,null,1);
+  if(!cfg){ setSync('local','未登入','尚未設定 Google 同步。資料只存在這個瀏覽器，請定期匯出備份。'); return; }
+  setSync('local','未登入','尚未登入 Google。資料只存在這個瀏覽器，登入後會自動同步。');
+  try{ await loadFirebase(); listenAuth(); }catch(e){ setSync('err','載入失敗',String(e&&e.message||e)); return; }
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&fbUser) syncNow(); });
+  setInterval(()=>{ if(!document.hidden&&fbUser&&!gBusy) syncNow(); },60000);
+}
+function applyTheme(){ document.documentElement.setAttribute('data-theme', data.theme==='auto'?'':data.theme); document.getElementById('themeSel').value=data.theme; }
+// 取得下載能力；在 Claude 內用平台下載，直接以瀏覽器開啟時改用一般下載
+async function saveFile(filename,content,mime){
+  let downloads=null;
+  try{ downloads=window.claude&&window.claude.use?await window.claude.use('downloads'):null; }catch(e){}
+  if(downloads){
+    try{
+      const r=await downloads.save({filename:filename,data:content});
+      if(r&&r.status==='saved') toast('已儲存：'+filename);
+    }catch(e){
+      if(e&&e.code==='declined') return;
+      toast('無法儲存檔案（'+((e&&e.code)||'未知錯誤')+'）');
+    }
+    return;
+  }
+  try{
+    const blob=new Blob([content],{type:mime});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    toast('已下載：'+filename);
+  }catch(e){ toast('這個環境無法下載檔案'); }
+}
+function exportBackup(){
+  const ts=localISO(new Date()).replace(/-/g,'');
+  saveFile('finance-backup-'+ts+'.json',JSON.stringify(data,null,2),'application/json');
+}
+function csvCell(v){ v=(v===undefined||v===null)?'':String(v); return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function exportCsv(){
+  const head=['日期','類型','帳戶','轉入帳戶','類別','項目說明','幣別','匯率','原幣金額','台幣金額','入帳年月','分期','備註'];
+  const rows=data.tx.slice().sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id).map(t=>{
+    const pm=postingMonth(t);
+    return [t.date.replace(/-/g,'/'), t.type==='income'?'收入':(t.type==='transfer'?'轉帳':'支出'), t.account, t.toAccount||'', t.category, t.desc||'',
+      t.currency, t.rate, t.amount, twd(t), pm.y+'/'+String(pm.m).padStart(2,'0'),
+      t.instId?('第'+t.instIndex+'/'+t.instTotal+'期'):'', t.note||''].map(csvCell).join(',');
+  });
+  const ts=localISO(new Date()).replace(/-/g,'');
+  saveFile('finance-transactions-'+ts+'.csv','\ufeff'+[head.join(',')].concat(rows).join('\r\n'),'text/csv');
+}
+function updateSummary(){
+  const el=document.getElementById('dataSummary'); if(!el) return;
+  const dates=data.tx.map(t=>t.date).sort();
+  el.textContent=data.tx.length+' 筆交易、'+data.accounts.length+' 個帳戶'+(dates.length?'；日期範圍 '+dates[0].replace(/-/g,'/')+' ～ '+dates[dates.length-1].replace(/-/g,'/'):'');
+}
+function importBackup(e){
+  const file=e.target.files[0]; if(!file) return;
+  const input=e.target;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    let parsed=null;
+    try{ parsed=JSON.parse(ev.target.result); }catch(err){}
+    input.value='';
+    if(!parsed||!Array.isArray(parsed.tx)||!Array.isArray(parsed.accounts)||!Array.isArray(parsed.incomeCats)||!Array.isArray(parsed.expenseCats)){
+      toast('檔案格式不正確，請選擇本 App 匯出的備份檔（JSON）。'); return;
+    }
+    askConfirm('這個備份檔有 '+parsed.tx.length+' 筆交易、'+parsed.accounts.length+' 個帳戶。匯入會完整覆蓋目前的 '+data.tx.length+' 筆交易與所有設定（已啟用雲端同步時，連雲端資料一起覆蓋），無法復原。確定要匯入嗎？',()=>{
+      const theme=data.theme||'auto';
+      data=parsed; data.theme=data.theme||theme;
+      if(!data.currencies) data.currencies=['TWD'];
+      save(); applyTheme(); refreshSelectsKeep(); renderAll();
+      toast('匯入完成：'+data.tx.length+' 筆交易');
+    },'匯入備份');
+  };
+  reader.readAsText(file);
+}
+
+function postingMonth(txn){ // returns {y,m} 1-12
+  const d=new Date(txn.date+'T00:00:00');
+  let y=d.getFullYear(), m=d.getMonth()+1;
+  const acc=data.accounts.find(a=>a.name===txn.account);
+  if(acc && acc.card && acc.day && d.getDate()<=acc.day){ m-=1; if(m<1){m=12;y-=1;} }
+  return {y,m};
+}
+function twd(txn){ return (txn.amount||0)*(txn.rate||1); }
+
+function fillSelect(sel,arr,cur){ sel.innerHTML=arr.map(v=>`<option${v===cur?' selected':''}>${v}</option>`).join(''); }
+function refreshFormSelects(){
+  fillSelect(document.getElementById('f_account'), data.accounts.map(a=>a.name));
+  fillSelect(document.getElementById('f_currency'), data.currencies);
+  updateCategorySelect();
+  setDateField('f_date',localISO(new Date()));
+}
+function updateCategorySelect(keep){
+  const t=document.getElementById('f_type').value, isT=t==='transfer';
+  document.getElementById('lbl_account').textContent=isT?'轉出帳戶':'帳戶';
+  document.getElementById('lbl_category').textContent=isT?'轉入帳戶':'類別';
+  document.getElementById('instLabel').hidden=isT;
+  if(isT){ document.getElementById('f_installment').checked=false; document.getElementById('installmentBox').style.display='none'; }
+  const catSel=document.getElementById('f_category');
+  fillSelect(catSel, isT?data.accounts.map(a=>a.name):(t==='income'?data.incomeCats:data.expenseCats), keep);
+  if(isT && !keep && catSel.value===document.getElementById('f_account').value && catSel.options.length>1){
+    catSel.selectedIndex=(catSel.selectedIndex+1)%catSel.options.length;
+  }
+}
+function refreshSelectsKeep(){
+  const acc=document.getElementById('f_account').value, cur=document.getElementById('f_currency').value, cat=document.getElementById('f_category').value;
+  fillSelect(document.getElementById('f_account'), data.accounts.map(a=>a.name), acc);
+  fillSelect(document.getElementById('f_currency'), data.currencies, cur);
+  updateCategorySelect(cat);
+}
+document.getElementById('f_type').addEventListener('change',()=>updateCategorySelect());
+
+function addMonths(dateStr,n){
+  const d=new Date(dateStr+'T00:00:00');
+  const day=d.getDate();
+  const target=new Date(d.getFullYear(), d.getMonth()+n, 1);
+  const lastDay=new Date(target.getFullYear(), target.getMonth()+1, 0).getDate();
+  target.setDate(Math.min(day,lastDay));
+  return localISO(target);
+}
+function addTx(){
+  const amount=parseFloat(document.getElementById('f_amount').value);
+  if(!amount||amount<=0){ toast('請輸入金額'); return; }
+  if(!document.getElementById('f_date').value){ toast('請輸入正確日期（西元年/月/日，例如 2026/11/10）'); return; }
+  const type=document.getElementById('f_type').value;
+  if(type==='transfer' && document.getElementById('f_account').value===document.getElementById('f_category').value){ toast('轉出與轉入帳戶不能相同'); return; }
+  const isInst=type!=='transfer' && document.getElementById('f_installment').checked;
+  const periods=isInst?(parseInt(document.getElementById('f_periods').value)||0):0;
+  const base={
+    date:document.getElementById('f_date').value,
+    account:document.getElementById('f_account').value,
+    category:type==='transfer'?'轉帳':document.getElementById('f_category').value,
+    desc:document.getElementById('f_desc').value,
+    currency:document.getElementById('f_currency').value,
+    rate:parseFloat(document.getElementById('f_rate').value)||1,
+    type:type,
+    note:document.getElementById('f_note').value
+  };
+  if(type==='transfer') base.toAccount=document.getElementById('f_category').value;
+  if(isInst && periods>=2){
+    const instId=Date.now();
+    const per=Math.round((amount/periods)*100)/100;
+    let allocated=0;
+    for(let i=1;i<=periods;i++){
+      const amt=(i<periods)? per : Math.round((amount-allocated)*100)/100;
+      allocated+=amt;
+      data.tx.push(Object.assign({}, base, {
+        id:instId+i, date:addMonths(base.date,i-1), amount:amt,
+        desc:`${base.desc}（分期 ${i}/${periods}）`,
+        instId, instIndex:i, instTotal:periods, instFullAmount:amount
+      }));
+    }
+  } else {
+    data.tx.push(Object.assign({}, base, {id:Date.now(), amount}));
+  }
+  document.getElementById('f_desc').value=''; document.getElementById('f_amount').value=''; document.getElementById('f_note').value='';
+  document.getElementById('f_installment').checked=false; document.getElementById('installmentBox').style.display='none'; document.getElementById('f_periods').value='';
+  save(); renderAll();
+}
+function delTx(id){ data.tx=data.tx.filter(t=>t.id!==id); save(); renderAll(); }
+function delInstallment(instId){
+  askConfirm('確定要刪除這整組分期（所有期數）嗎？',()=>{
+    data.tx=data.tx.filter(t=>t.instId!==instId); save(); renderAll(); closeDetail();
+  },'刪除分期');
+}
+
+function renderTable(){
+  const box=document.getElementById('txList');
+  const from=document.getElementById('tx_from').value, to=document.getElementById('tx_to').value;
+  let list=data.tx.slice();
+  if(from) list=list.filter(t=>t.date>=from);
+  if(to) list=list.filter(t=>t.date<=to);
+  if(!list.length){ box.innerHTML='<div class="txempty">這個區間沒有交易</div>'; return; }
+  box.innerHTML=list.sort((a,b)=> b.date.localeCompare(a.date) || b.id-a.id).map(t=>{
+    const pm=postingMonth(t), amt=twd(t).toLocaleString();
+    const isT=t.type==='transfer';
+    const acct=isT?`${t.account} → ${t.toAccount||''}`:t.account;
+    const sign=t.type==='income'?'+':(t.type==='expense'?'−':'');
+    const d=new Date(t.date+'T00:00:00');
+    const shifted=(pm.y!==d.getFullYear()||pm.m!==d.getMonth()+1)?`　入帳 ${pm.y}/${String(pm.m).padStart(2,'0')}`:'';
+    return `<div class="txcard" onclick="openDetail(${t.id})">
+      <div class="tx-l1"><span class="tx-date">${t.date.replace(/-/g,'/')}</span><span class="tx-desc">${t.desc||t.category}</span>
+        <button class="ghost" onclick="event.stopPropagation();delTx(${t.id})">刪除</button></div>
+      <div class="tx-l2"><span class="tx-meta">${acct}・${t.category}${shifted}</span><span class="tx-amt ${t.type}">${sign}${amt}</span></div>
+    </div>`;
+  }).join('');
+}
+function openDetail(id){
+  const t=data.tx.find(x=>x.id===id); if(!t) return;
+  const pm=postingMonth(t);
+  const acc=data.accounts.find(a=>a.name===t.account);
+  const rows=[
+    ['日期',t.date.replace(/-/g,'/')],['帳戶',t.account],['類別',t.category],['項目說明',t.desc||'（無）'],
+    ['類型',t.type==='income'?'收入':(t.type==='transfer'?'轉帳':'支出')],['幣別',t.currency],['匯率',t.rate],
+    ['原幣金額',Number(t.amount).toLocaleString()],
+    ['台幣金額',twd(t).toLocaleString()],
+    ['結帳日',acc&&acc.card?`每月 ${acc.day} 號`:'（非信用卡）'],
+    ['入帳年月',`${pm.y}/${String(pm.m).padStart(2,'0')}`],
+    ['備註',t.note||'（無）'],
+  ];
+  if(t.type==='transfer'){ rows[1]=['轉出帳戶',t.account]; rows[2]=['轉入帳戶',t.toAccount||'（無）']; }
+  if(t.instId){
+    rows.splice(4,0,['分期資訊',`第 ${t.instIndex} / ${t.instTotal} 期，總金額 ${Number(t.instFullAmount).toLocaleString()}`]);
+  }
+  let html='<div class="dl">'+rows.map(([k,v])=>`<div class="k">${k}</div><div>${v}</div>`).join('')+'</div>';
+  if(t.instId){
+    html+=`<button class="closebtn" style="color:var(--red);margin-top:10px;" onclick="delInstallment(${t.instId})">刪除整組分期（共 ${t.instTotal} 筆）</button>`;
+  }
+  document.getElementById('detailBody').innerHTML=html;
+  document.getElementById('detailOverlay').style.display='flex';
+}
+function closeDetail(){ document.getElementById('detailOverlay').style.display='none'; }
+
+function pieSVG(labels,values,colors){
+  const total=values.reduce((a,b)=>a+b,0);
+  if(total<=0) return '<div class="hint">尚無資料</div>';
+  let cx=60,cy=60,r=58,a0=-90,paths='';
+  values.forEach((v,i)=>{
+    if(v<=0) return;
+    const frac=v/total, a1=a0+frac*360;
+    const x0=cx+r*Math.cos(a0*Math.PI/180), y0=cy+r*Math.sin(a0*Math.PI/180);
+    const x1=cx+r*Math.cos(a1*Math.PI/180), y1=cy+r*Math.sin(a1*Math.PI/180);
+    const large=frac>0.5?1:0;
+    paths+= frac>=0.999
+      ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${colors[i]}"/>`
+      : `<path d="M${cx},${cy} L${x0},${y0} A${r},${r} 0 ${large} 1 ${x1},${y1} Z" fill="${colors[i]}"/>`;
+    a0=a1;
+  });
+  const legend=labels.map((l,i)=>values[i]>0?`<div><span class="dot" style="background:${colors[i]}"></span>${l}：${values[i].toLocaleString()}（${(values[i]/total*100).toFixed(1)}%）</div>`:'').join('');
+  return `<svg width="140" height="140" viewBox="0 0 120 120">${paths}</svg><div class="legend">${legend}</div>`;
+}
+function resolvedColors(n){
+  const cs=getComputedStyle(document.documentElement);
+  const base=['--pie1','--pie2','--pie3','--pie4','--pie5','--pie6','--pie7','--pie8'];
+  const out=[]; for(let i=0;i<n;i++) out.push(cs.getPropertyValue(base[i%base.length]).trim());
+  return out;
+}
+
+function aggByMonth(y,m,field,type){ // type: 'expense'(預設) 或 'income'
+  type=type||'expense';
+  const map={};
+  data.tx.forEach(t=>{
+    if(t.type!==type) return;
+    const pm=postingMonth(t); if(pm.y!==y||pm.m!==m) return;
+    const key=t[field]; map[key]=(map[key]||0)+twd(t);
+  });
+  return map;
+}
+function aggYear(y,field,type){
+  type=type||'expense';
+  const map={};
+  data.tx.forEach(t=>{
+    if(t.type!==type) return;
+    const pm=postingMonth(t); if(pm.y!==y) return;
+    const key=t[field]; map[key]=(map[key]||0)+twd(t);
+  });
+  return map;
+}
+function monthlyTrend(y){
+  const inc=Array(12).fill(0), out=Array(12).fill(0);
+  data.tx.forEach(t=>{
+    const pm=postingMonth(t); if(pm.y!==y) return;
+    if(t.type==='income') inc[pm.m-1]+=twd(t); else if(t.type==='expense') out[pm.m-1]+=twd(t);
+  });
+  return {inc,out};
+}
+function cumulativeNet(untilY,untilM){ // 累計到某年月（含）為止的收入-支出淨額
+  const targetIdx=untilY*12+untilM;
+  let total=0;
+  data.tx.forEach(t=>{
+    const pm=postingMonth(t);
+    if(t.type!=='transfer' && pm.y*12+pm.m<=targetIdx) total += t.type==='income'?twd(t):-twd(t);
+  });
+  return total;
+}
+
+function renderMonthly(){
+  const y=parseInt(document.getElementById('m_year').value)||new Date().getFullYear();
+  const m=parseInt(document.getElementById('m_month').value)||(new Date().getMonth()+1);
+  let inc=0,out=0;
+  data.tx.forEach(t=>{ const pm=postingMonth(t); if(pm.y!==y||pm.m!==m) return; if(t.type==='income') inc+=twd(t); else if(t.type==='expense') out+=twd(t); });
+  let py=y, pm2=m-1; if(pm2<1){pm2=12;py=y-1;}
+  const carryIn=cumulativeNet(py,pm2);
+  document.getElementById('m_carry').textContent=carryIn.toLocaleString();
+  document.getElementById('m_in').textContent=(inc+carryIn).toLocaleString();
+  document.getElementById('m_out').textContent=out.toLocaleString();
+  document.getElementById('m_bal').textContent=(inc+carryIn-out).toLocaleString();
+  const catMap=aggByMonth(y,m,'category','expense'); const cats=Object.keys(catMap);
+  document.getElementById('m_cat_chart').innerHTML=pieSVG(cats,cats.map(c=>catMap[c]),resolvedColors(cats.length));
+  const incMap=aggByMonth(y,m,'category','income'); const incs=Object.keys(incMap);
+  document.getElementById('m_inccat_chart').innerHTML=pieSVG(incs,incs.map(c=>incMap[c]),resolvedColors(incs.length));
+  const accMap=aggByMonth(y,m,'account','expense'); const accs=Object.keys(accMap);
+  document.getElementById('m_acc_chart').innerHTML=pieSVG(accs,accs.map(a=>accMap[a]),resolvedColors(accs.length));
+}
+function renderAnnual(){
+  const y=parseInt(document.getElementById('y_year').value)||new Date().getFullYear();
+  const {inc,out}=monthlyTrend(y);
+  const maxV=Math.max(1,...inc,...out);
+  let bars='<div style="display:flex;gap:6px;align-items:flex-end;height:140px;overflow-x:auto;">';
+  for(let i=0;i<12;i++){
+    const hi=Math.round(inc[i]/maxV*110), ho=Math.round(out[i]/maxV*110);
+    bars+=`<div style="text-align:center;font-size:10px;color:var(--sub)"><div style="display:flex;gap:2px;align-items:flex-end;height:110px;">
+      <div style="width:8px;height:${hi}px;background:var(--green)"></div>
+      <div style="width:8px;height:${ho}px;background:var(--red)"></div></div>${i+1}月</div>`;
+  }
+  bars+='</div><div class="hint"><span style="color:var(--green)">■</span>收入　<span style="color:var(--red)">■</span>支出</div>';
+  document.getElementById('y_trend').innerHTML=bars;
+  const catMap=aggYear(y,'category','expense'); const cats=Object.keys(catMap);
+  document.getElementById('y_cat_chart').innerHTML=pieSVG(cats,cats.map(c=>catMap[c]),resolvedColors(cats.length));
+  const incMap=aggYear(y,'category','income'); const incs=Object.keys(incMap);
+  document.getElementById('y_inccat_chart').innerHTML=pieSVG(incs,incs.map(c=>incMap[c]),resolvedColors(incs.length));
+  const accMap=aggYear(y,'account','expense'); const accs=Object.keys(accMap);
+  document.getElementById('y_acc_chart').innerHTML=pieSVG(accs,accs.map(a=>accMap[a]),resolvedColors(accs.length));
+  const assetTotal=data.accounts.filter(a=>!a.card).reduce((s,a)=>s+accountBalance(a.name),0);
+  const liabilityTotal=data.accounts.filter(a=>a.card).reduce((s,a)=>s-accountBalance(a.name),0);
+  document.getElementById('y_asset').textContent=assetTotal.toLocaleString();
+  document.getElementById('y_liability').textContent=liabilityTotal.toLocaleString();
+}
+
+function accountBalance(name){
+  const acc=data.accounts.find(a=>a.name===name);
+  let bal=acc?(acc.balance||0):0;
+  data.tx.forEach(t=>{
+    if(t.type==='transfer'){ if(t.account===name) bal-=twd(t); if(t.toAccount===name) bal+=twd(t); }
+    else if(t.account===name) bal += t.type==='income'?twd(t):-twd(t);
+  });
+  return bal;
+}
+function renderAccountSettings(){
+  document.getElementById('acc_list').innerHTML=data.accounts.map((a,i)=>
+    `<div class="chip">${a.name}${a.card?`（信用卡・${a.day}號結帳）`:''}　期初 ${(a.balance||0).toLocaleString()}｜目前 ${accountBalance(a.name).toLocaleString()}<button onclick="delAccount(${i})">×</button></div>`).join('');
+}
+function renderCatSettings(){
+  document.getElementById('inc_list').innerHTML=data.incomeCats.map((c,i)=>`<div class="chip">${c}<button onclick="delCat('income',${i})">×</button></div>`).join('');
+  document.getElementById('exp_list').innerHTML=data.expenseCats.map((c,i)=>`<div class="chip">${c}<button onclick="delCat('expense',${i})">×</button></div>`).join('');
+  document.getElementById('cur_list').innerHTML=data.currencies.map((c,i)=>`<div class="chip">${c}<button onclick="delCurrency(${i})">×</button></div>`).join('');
+}
+function addAccount(){
+  const name=document.getElementById('new_acc').value.trim(); if(!name) return;
+  const card=document.getElementById('new_acc_card').checked;
+  const day=parseInt(document.getElementById('new_acc_day').value)||null;
+  const balance=parseFloat(document.getElementById('new_acc_balance').value)||0;
+  data.accounts.push({name,card,day: card?day:null,balance});
+  document.getElementById('new_acc').value=''; document.getElementById('new_acc_day').value='';
+  document.getElementById('new_acc_balance').value=''; document.getElementById('new_acc_card').checked=false;
+  save(); renderAccountSettings(); refreshFormSelects();
+}
+function delAccount(i){ data.accounts.splice(i,1); save(); renderAccountSettings(); refreshFormSelects(); }
+function addCat(kind){
+  const inputId=kind==='income'?'new_inc':'new_exp';
+  const v=document.getElementById(inputId).value.trim(); if(!v) return;
+  (kind==='income'?data.incomeCats:data.expenseCats).push(v);
+  document.getElementById(inputId).value='';
+  save(); renderCatSettings(); updateCategorySelect();
+}
+function delCat(kind,i){ (kind==='income'?data.incomeCats:data.expenseCats).splice(i,1); save(); renderCatSettings(); updateCategorySelect(); }
+function addCurrency(){ const v=document.getElementById('new_cur').value.trim(); if(!v) return; data.currencies.push(v); document.getElementById('new_cur').value=''; save(); renderCatSettings(); refreshFormSelects(); }
+function delCurrency(i){ data.currencies.splice(i,1); save(); renderCatSettings(); refreshFormSelects(); }
+
+document.getElementById('themeSel').addEventListener('change',e=>{ data.theme=e.target.value; save(); applyTheme(); renderAll(); });
+document.getElementById('m_year').addEventListener('input',renderMonthly);
+document.getElementById('m_month').addEventListener('change',renderMonthly);
+document.getElementById('tx_from').addEventListener('change',renderTable);
+document.getElementById('tx_to').addEventListener('change',renderTable);
+document.getElementById('y_year').addEventListener('input',renderAnnual);
+
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  ['record','monthly','annual','settings','backup'].forEach(t=>document.getElementById('tab-'+t).style.display= t===b.dataset.tab?'':'none');
+  if(b.dataset.tab==='monthly') renderMonthly();
+  if(b.dataset.tab==='annual') renderAnnual();
+}));
+
+function renderAll(){ updateSummary(); renderTable(); renderAccountSettings(); renderCatSettings(); renderMonthly(); renderAnnual(); }
+
+fillSelect(document.getElementById('m_month'), Array.from({length:12},(_,i)=>i+1).map(String));
+document.getElementById('m_year').value=new Date().getFullYear();
+document.getElementById('m_month').value=new Date().getMonth()+1;
+document.getElementById('y_year').value=new Date().getFullYear();
+applyTheme();
+refreshFormSelects();
+renderAll();
+document.getElementById('f_installment').checked=false; document.getElementById('installmentBox').style.display='none';
+initCloud();
+</script>
+</body>
+</html>
